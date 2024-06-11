@@ -49,7 +49,7 @@ jobs:
       - name: Get latest tag
         id: get_latest_tag
         run: |
-          TOKEN=$(curl -s -H "Content-Type: application/json" -X POST -d '{"username": "'$DOCKER_USERNAME'", "password": "'$DOCKER_PASSWORD'"}' https://hub.docker.com/v2/users/login/ | jq -r .token)
+          TOKEN=$(curl -s -H "Content-Type: application/json" -d '{"username": "'"$DOCKER_USERNAME"'", "password": "'"$DOCKER_PASSWORD"'"}' https://hub.docker.com/v2/users/login/ | jq -r .token)
           LATEST_TAG=$(curl -s -H "Authorization: JWT $TOKEN" https://hub.docker.com/v2/repositories/$REPO_USER/$REPO_IMAGE/tags/?page_size=1 | jq -r '.results[0].name')
           echo "Latest tag: $LATEST_TAG"
           if [[ "$LATEST_TAG" == "null" ]]; then
