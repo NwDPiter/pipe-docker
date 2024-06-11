@@ -43,12 +43,28 @@ jobs:
             echo "Repository $REPO_NAME already exists."
           fi
 
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Get latest tag
+        id: get_latest_tag
+        run: |
+          TOKEN=$(curl -s -H "Content-Type: application/json" -d '{"username": "'"$DOCKER_USERNAME"'", "password": "'"$DOCKER_PASSWORD"'"}' https://hub.docker.com/v2/users/login/ | jq -r .token)
+          LATEST_TAG=$(curl -s -H "Authorization: JWT $TOKEN" https://hub.docker.com/v2/repositories/$REPO_USER/$REPO_IMAGE/tags/?page_size=1 | jq -r '.results[0].name')
+          echo "Latest tag: $LATEST_TAG"
+          if [[ "$LATEST_TAG" == "null" ]]; then
+            NEXT_TAG="1.0"
+          else
+            NEXT_TAG=$(echo $LATEST_TAG | awk -F. '{print $1+1".0"}')
+          fi
+          echo "Next tag: $NEXT_TAG"
+          echo "NEXT_TAG=$NEXT_TAG" >> $GITHUB_ENV
+
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: latixa12/admin
-          tags: "1.0"  # Definindo a tag como 1.0
+          images: latixa12/teste
 
       - name: Build and push Docker image
         id: push
@@ -57,12 +73,12 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: "1.0"  # Usando a tag 1.0 para a imagem
+          tags: ${{ env.NEXT_TAG }}  # Utilizando a próxima tag
           labels: ${{ steps.meta.outputs.labels }}
       
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v1
         with:
-          subject-name: latixa12/admin
+          subject-name: latixa12/teste
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
